@@ -9,6 +9,7 @@ error_reporting( E_ALL );
 
 // Load required files.
 require( 'functions.php' );
+require( 'class-rda-core.php' );
 require( 'class-rda-daylio.php' );
 require( 'class-rda-snorelab.php' );
 require( 'class-rda-fitbit.php' );
@@ -38,7 +39,9 @@ $fitbit = new RDA_Fitbit();
 $fitbit_data = $fitbit->get_data( $files['fitbit'] );
 
 
+// MAKE SURE THAT SAME KEY CAN BE MERGED IN TO EACH OTHER AT ALL POINTS ... 
 $d = array_replace( $snorelab_data, $daylio_data );
+$d = array_replace( $d, $fitbit_data );
 ksort( $d );
 
 print_r( $d );

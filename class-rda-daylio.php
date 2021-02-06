@@ -1,6 +1,6 @@
 ﻿<?php
 
-class RDA_Daylio {
+class RDA_Daylio extends RDA_Core {
 
 	/**
 	 * Get data.

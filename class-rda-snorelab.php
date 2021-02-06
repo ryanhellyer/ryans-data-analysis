@@ -1,6 +1,6 @@
 ﻿<?php
 
-class RDA_Snorelab {
+class RDA_Snorelab extends RDA_Core {
 
 	/**
 	 * Get data.
@@ -104,16 +104,6 @@ class RDA_Snorelab {
 		$data['end_time']   = strtotime( $this->cleanup( $row[2] ) );
 
 		return $data;
-	}
-
-	/**
-	 * Cleanup strings.
-	 * 
-	 * @param string $content
-	 * @return string
-	 */
-	private function cleanup( $content ) {
-		return trim( str_replace( '"', '', $content ) );
 	}
 
 	/**

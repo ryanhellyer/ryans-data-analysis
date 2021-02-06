@@ -1,6 +1,13 @@
 ﻿<?php
 
-class RDA_Fitbit {
+class RDA_Fitbit extends RDA_Core {
+
+
+	private $kept_types = array(
+		'Body',
+		'Activities',
+		'Sleep',
+	);
 
 	/**
 	 * Get data.
@@ -10,8 +17,12 @@ class RDA_Fitbit {
 
 		foreach ( $files as $file ) {
 			$contents = file_get_contents( RDA_DATA_LOCATION . $file );
-			$data     = $this->convert_to_array( $contents );
+			$chunks     = $this->convert_to_chunks( $contents );
 		}
+
+		$data = $this->process_body_data( $chunks['Body'] );
+//		$data = $this->process_activities_data( $chunks['Activities'] );
+//		$data = $this->process_sleep_data( $chunks['Sleep'] );
 
 		return $data;
 	}
@@ -22,113 +33,66 @@ class RDA_Fitbit {
 	 * @param string $contents The raw CSV file contents.
 	 * @return array The data.
 	 */
-	private function convert_to_array( $contents ) {
-return;
+	private function convert_to_chunks( $contents ) {
+		$chunks = array();
 
 		$lines = explode( "\n", $contents );
+
+		$rejected_types = array(
+			'Foods',
+			'Food Log',
+		);
+
+		$types = array_merge( $this->kept_types, $rejected_types );
+
 		foreach ( $lines as $line ) {
-			$row = explode( ',', $line );
 
-			// If first column is a time, then we want to process this row ...
-			$time = strtotime( trim( str_replace( '"', '', $row[0] ) ) );
-
-			$time = strtotime( trim( str_replace( '"', '', $row[0] . ' ' . $row[3] ) ) );
-			if ( '' != $time ) {
-				$data = array();
-
-				// Add data types.
-				$data = $this->add_mood( $data, $row );
-				$data = $this->add_activities( $data, $row );
-				$data = $this->add_note( $data, $row );
-
-				$array[ $time ] = $data;
+			if ( in_array( $line, $types ) ) {
+				$type = $line;
+			} else if ( str_contains( $line, 'Food Log' ) ) {
+				$type = 'Food Log';
 			}
-		}
 
-		return $array;
-	}
+			if ( in_array( $type, $rejected_types ) ) {
+				continue;
+			}
 
-	/**
-	 *
-	 * @param array
-	 * @param string
-	 * @return array
-	 */
-	private function add_mood( $data, $row ) {
-		$mood = 'error';
-
-		switch ( $row[4] ) {
-			case 'rad':
-				$mood = 4;
-				break;
-			case 'good':
-				$mood = 3;
-				break;
-			case 'meh':
-				$mood = 2;
-				break;
-			case 'bad':
-				$mood = 1;
-				break;
-			case 'awful':
-				$mood = 0;
-				break;
-		}
-
-		$data['mood'] = $mood;
-
-		return $data;
-	}
-
-	/**
-	 *
-	 * @param array
-	 * @param array
-	 * @return array
-	 */
-	private function add_activities( $data, $row ) {
-		$activities = $row[5];
-
-		$activities = explode( '|', $row[5] );
-		foreach ( $activities as $key => $activity ) {
-
-			$activity = trim( $activity );
-			$activity = str_replace( '"', '', $activity );
-			if ( '' !== $activity ) {
-				$data['activities'] = $activity;
+			if ( isset( $type ) ) {
+				$chunks[ $type ][] = $line;
 			}
 
 		}
 
-		return $data;
+		return $chunks;
 	}
 
 	/**
-	 *
-	 * @param array
-	 * @param array
-	 * @return array
 	 */
-	private function add_note( $data, $row ) {
-		$note_title = trim( str_replace( '"', '', $row[6] ) );
-		$note_text  = trim( str_replace( '"', '', $row[7] ) );
+	private function process_body_data( $chunk ) {
+		$data = array();
 
-		$note = '';
+		unset( $chunk[0] );
+		unset( $chunk[1] );
 
-		if ( '' !== $note_title  ) {
-			$note .= $note_title;
-		}
+		foreach ( $chunk as $line ) {
+			$columns = explode( ',', $line );
 
-		if ( '' !== $note_title && '' !== $note_text ) {
-			$note .= ' - ';
-		}
+			$date = $this->cleanup( $columns[0] );
+			if ( '' == $date ) {
+				continue;
+			}
+			$start_time = strtotime( $date );
+			$middle_time = $start_time + ( 24 * 60 * 60 ); // add 12 hours to make sure it's in the middle of the day.
 
-		if ( '' !== $note_text ) {
-			$note .= $note_text;
-		}
+			$weight = $this->cleanup( $columns[1] );
+			$bmi    = $this->cleanup( $columns[2] );
+			$fat    = $this->cleanup( $columns[3] );
 
-		if ( '' !== $note ) {
-			$data['note'] = $note;
+			$data[ $middle_time ] = array(
+				'weight'     => $weight,
+				'bmi'        => $bmi,
+				'fat'        => $fat,
+			);
 		}
 
 		return $data;
