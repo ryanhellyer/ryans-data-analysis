@@ -23,7 +23,7 @@ class RDA_Fitbit {
 	 * @return array The data.
 	 */
 	private function convert_to_array( $contents ) {
-		return;
+return;
 
 		$lines = explode( "\n", $contents );
 		foreach ( $lines as $line ) {
