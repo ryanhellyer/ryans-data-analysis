@@ -11,6 +11,7 @@ error_reporting( E_ALL );
 require( 'functions.php' );
 require( 'class-rda-daylio.php' );
 require( 'class-rda-snorelab.php' );
+require( 'class-rda-fitbit.php' );
 
 // Get CSV files.
 $types = array( 'daylio', 'snorelab', 'fitbit' );
@@ -33,7 +34,8 @@ $daylio_data = $daylio->get_data( $files['daylio'] );
 $snorelab = new RDA_Snorelab();
 $snorelab_data = $snorelab->get_data( $files['snorelab'] );
 
-//$d = array_replace($a, $b);
+$fitbit = new RDA_Fitbit();
+$fitbit_data = $fitbit->get_data( $files['fitbit'] );
 
 
 $d = array_replace( $snorelab_data, $daylio_data );
